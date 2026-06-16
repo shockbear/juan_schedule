@@ -18,6 +18,59 @@
 <img width="1772" height="704" alt="秦若宁_课程列表 (1)" src="https://github.com/user-attachments/assets/34030f0f-8e87-44a1-a0f7-76ac32d2ec7f" />
 
 
+## 界面预览
+
+<p align="center">
+  <img src="docs/screenshots/calendar-view.png" width="800" alt="日历看板">
+</p>
+<p align="center">
+  <em>日历看板 —— 周一开头的月视图，支持状态筛选与多学生切换</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/students-view.png" width="800" alt="学生管理">
+</p>
+<p align="center">
+  <em>学生管理 —— 卡片视图，一键新增 / 编辑 / 删除</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/courses-view.png" width="800" alt="课程管理">
+</p>
+<p align="center">
+  <em>课程管理 —— 状态色条 / 科目徽标 / 时间地点老师房间一目了然</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/subjects-view.png" width="800" alt="科目管理">
+</p>
+<p align="center">
+  <em>科目管理 —— 内置 6 个 + 自定义任意科目，删除时校验无引用</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-drawer.png" width="800" alt="设置抽屉">
+</p>
+<p align="center">
+  <em>设置抽屉 —— 切换中英文 / 导出本地数据 / 上传到本地服务 / 数据路径</em>
+</p>
+
+### PNG 导出效果
+
+<p align="center">
+  <img src="docs/screenshots/calendar-export.png" width="600" alt="月历 PNG 导出">
+</p>
+<p align="center">
+  <em>月历 PNG 导出 —— 无头浏览器渲染的干净打印版月历，适合分享</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/course-export.png" width="800" alt="单课程导出">
+</p>
+<p align="center">
+  <em>单课程信息图 —— 时间、地点、老师、房间一览</em>
+</p>
+
 ## 快速开始
 
 ```bash
@@ -129,6 +182,8 @@ Agent:
 ├── SKILL.md                  # Agent 工具文档
 ├── README.md
 ├── LICENSE                   # MIT
+├── docs/
+│   └── screenshots/          # README 中引用的界面截图
 └── src/
     ├── cli.js                # CLI 入口（commander）
     ├── server.js             # HTTP 服务：静态资源 + REST API
