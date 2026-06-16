@@ -1,0 +1,2513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卷王课程表</title>
+<style>
+:root {
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #4f8ef7;
+  --accent-soft: #e8f0fe;
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --danger: #ef4444;
+  --success: #10b981;
+  --warn: #f59e0b;
+  --chip-text: #ffffff;
+  --today-ring: #4f8ef7;
+  --overlay: rgba(15, 23, 42, 0.45);
+}
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --accent: #60a5fa;
+  --accent-soft: #1e3a5f;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(0, 0, 0, 0.6);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* === Top bar === */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow);
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 16px;
+}
+.brand-logo {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, #4f8ef7, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px;
+}
+.student-selector {
+  position: relative;
+  margin-left: auto;
+}
+.student-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--accent-soft); border: 1px solid transparent;
+  color: var(--text); font-size: 13px; font-weight: 500;
+}
+.student-btn:hover { border-color: var(--accent); }
+.student-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent);
+}
+.student-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow-lg);
+  min-width: 180px; padding: 6px;
+  display: none;
+}
+.student-menu.open { display: block; }
+.student-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 6px; cursor: pointer;
+  width: 100%; border: none; background: none; text-align: left;
+  color: var(--text); font-size: 13px;
+}
+.student-menu-item:hover { background: var(--accent-soft); }
+.topbar-actions { display: flex; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 13px; font-weight: 500;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+.btn-primary:hover { opacity: 0.9; color: white; }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-icon {
+  padding: 6px; width: 28px; height: 28px; justify-content: center;
+}
+
+/* === Tabs === */
+.tabs {
+  display: flex; gap: 0;
+  padding: 0 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  padding: 14px 20px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--muted); font-size: 14px; font-weight: 500;
+  margin-bottom: -1px;
+}
+.tab.active {
+  color: var(--accent); border-bottom-color: var(--accent);
+}
+
+/* === Layout === */
+main {
+  max-width: 1280px; margin: 0 auto;
+  padding: 24px;
+}
+.view { display: none; }
+.view.active { display: block; }
+
+/* === Calendar === */
+.cal-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.cal-title { font-size: 18px; font-weight: 700; margin-right: 8px; }
+.status-legend,
+.subject-legend {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px;
+}
+.status-legend { margin-bottom: 12px; }
+.subject-legend { margin-top: 12px; }
+.status-legend-title { font-weight: 600; color: var(--muted); margin-right: 4px; }
+.status-legend-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  font: inherit; color: inherit; cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  min-width: 82px;
+  justify-content: flex-start;
+}
+.status-legend-item:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.status-legend-item.active {
+  background: transparent;
+  border-color: var(--accent);
+  font-weight: 600;
+  color: var(--accent);
+}
+.legend-swatch {
+  display: inline-block; width: 18px; height: 12px; border-radius: 3px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.cal-dow {
+  padding: 10px; text-align: center;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.cal-dow.weekend { color: var(--danger); }
+.cal-cell {
+  min-height: 72px; padding: 4px 5px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 2px;
+  cursor: pointer; transition: background 0.1s;
+  position: relative;
+}
+.cal-cell:hover { background: var(--bg); }
+.cal-cell.other-month { background: var(--bg); opacity: 0.55; }
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell.today { box-shadow: inset 0 0 0 2px var(--today-ring); }
+.cal-cell.today .cal-day-num {
+  background: var(--accent); color: white;
+  border-radius: 50%; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+.cal-day-num {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+.cal-cell.other-month .cal-day-num { color: var(--border); }
+.cal-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 5px; border-radius: 4px;
+  font-size: 11px; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+}
+.cal-chip-time { font-weight: 600; opacity: 0.95; }
+.cal-chip-more {
+  font-size: 11px; color: var(--muted);
+  padding: 2px 6px;
+}
+
+.cal-chip.course-status-active { background: #3b82f6; color: #ffffff; }
+.cal-chip.course-status-upcoming { background: #e5e7eb; color: #1f2937; }
+.cal-chip.course-status-done { background: #10b981; color: #ffffff; }
+[data-theme="dark"] .cal-chip.course-status-upcoming { background: #4b5563; color: #f3f4f6; }
+
+.status-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-sizing: content-box;
+}
+.cal-chip.course-status-upcoming .status-dot {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.legend-swatch.legend-all {
+  background: linear-gradient(90deg,
+    #3b82f6 0%, #3b82f6 33.3%,
+    #e5e7eb 33.3%, #e5e7eb 66.6%,
+    #10b981 66.6%, #10b981 100%);
+}
+[data-theme="dark"] .legend-swatch.legend-all {
+  background: linear-gradient(90deg,
+    #3b82f6 0%, #3b82f6 33.3%,
+    #4b5563 33.3%, #4b5563 66.6%,
+    #10b981 66.6%, #10b981 100%);
+}
+.legend-swatch.legend-active { background: #3b82f6; }
+.legend-swatch.legend-upcoming { background: #e5e7eb; }
+[data-theme="dark"] .legend-swatch.legend-upcoming { background: #4b5563; }
+.legend-swatch.legend-done { background: #10b981; }
+
+.legend-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-sizing: content-box;
+}
+[data-theme="dark"] .legend-dot { border-color: rgba(255, 255, 255, 0.4); }
+
+/* === Students view === */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.student-card {
+  background: var(--card); border-radius: 12px;
+  padding: 16px; box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.student-card-head { display: flex; align-items: center; gap: 10px; }
+.student-color {
+  width: 36px; height: 36px; border-radius: 10px;
+}
+.student-card-name { font-size: 16px; font-weight: 700; }
+.student-card-meta { color: var(--muted); font-size: 12px; }
+.student-card-actions { display: flex; gap: 6px; margin-top: auto; }
+
+/* === Courses view === */
+.courses-list {
+  background: var(--card); border-radius: 12px;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  overflow: hidden;
+}
+.course-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  border-left: 4px solid transparent;
+}
+.course-row:last-child { border-bottom: none; }
+.course-row.course-row-status-active { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.04); }
+.course-row.course-row-status-upcoming { border-left-color: #e5e7eb; }
+.course-row.course-row-status-done { border-left-color: #10b981; background: rgba(16, 185, 129, 0.04); }
+[data-theme="dark"] .course-row.course-row-status-active { background: rgba(59, 130, 246, 0.08); }
+[data-theme="dark"] .course-row.course-row-status-upcoming { border-left-color: #4b5563; }
+[data-theme="dark"] .course-row.course-row-status-done { background: rgba(16, 185, 129, 0.08); }
+.course-info { display: flex; flex-direction: column; gap: 4px; }
+.course-title {
+  font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.course-meta {
+  color: var(--muted); font-size: 12px;
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.course-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.course-actions { display: flex; gap: 6px; }
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 500;
+  color: #ffffff;
+}
+.status-badge.status-active { background: #3b82f6; }
+.status-badge.status-upcoming { background: #9ca3af; color: #ffffff; }
+.status-badge.status-done { background: #10b981; }
+.empty-state {
+  padding: 40px; text-align: center; color: var(--muted);
+}
+
+/* === Modal === */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--overlay);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card); border-radius: 14px;
+  width: 100%; max-width: 560px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.modal-head {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-body {
+  padding: 20px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-foot {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.form-row { display: flex; flex-direction: column; gap: 6px; }
+.form-row label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.form-row input, .form-row select, .form-row textarea {
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 13px;
+  outline: none;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  border-color: var(--accent);
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.color-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 50%;
+  cursor: pointer; border: 2px solid transparent;
+}
+.color-swatch.active { border-color: var(--text); }
+.radio-group { display: flex; gap: 12px; }
+.radio-option {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-size: 13px;
+}
+
+.preview-list {
+  background: var(--bg); border-radius: 8px;
+  padding: 10px; max-height: 180px; overflow-y: auto;
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.preview-chip {
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--card); border: 1px solid var(--border);
+  font-size: 11px; cursor: pointer;
+  color: var(--text);
+  user-select: none;
+}
+.preview-chip.is-class {
+  background: var(--accent); color: #ffffff; border-color: var(--accent);
+}
+.preview-chip.is-rest {
+  opacity: 0.45; text-decoration: line-through;
+}
+.preview-warning {
+  color: var(--warn); font-size: 12px; padding: 8px;
+  background: rgba(245, 158, 11, 0.08); border-radius: 6px;
+}
+.preset-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* === Day drawer === */
+.day-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 380px; max-width: 90vw;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 90;
+  display: flex; flex-direction: column;
+}
+.day-drawer.open { transform: translateX(0); }
+.day-drawer-head {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.day-drawer-title { font-weight: 700; font-size: 16px; }
+.day-drawer-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.drawer-item {
+  padding: 12px; border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.drawer-item-head {
+  display: flex; align-items: center; gap: 8px;
+}
+.drawer-item-subject {
+  padding: 2px 8px; border-radius: 4px;
+  color: white; font-size: 11px; font-weight: 600;
+}
+.drawer-item-name { font-weight: 600; font-size: 14px; }
+.drawer-item-time { color: var(--text); font-size: 13px; font-weight: 500; }
+.drawer-item-meta {
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 12px; color: var(--muted);
+}
+
+/* === Settings drawer === */
+.settings-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 360px; max-width: 90vw;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 90;
+  display: flex; flex-direction: column;
+}
+.settings-drawer.open { transform: translateX(0); }
+.settings-drawer-head {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.settings-drawer-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 13px; }
+.setting-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.setting-section { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.setting-section:last-child { border-bottom: none; }
+.setting-section-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.subjects-list {
+  background: var(--card); border-radius: 12px;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  overflow: hidden;
+}
+.subject-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  border-left: 4px solid transparent;
+  background: var(--card);
+  transition: background 0.1s;
+}
+.subject-row:last-child { border-bottom: none; }
+.subject-row:hover { background: var(--bg); }
+.subject-info { display: flex; flex-direction: column; gap: 4px; }
+.subject-title {
+  font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.subject-meta {
+  color: var(--muted); font-size: 12px;
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.subject-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.subject-actions { display: flex; gap: 6px; }
+.subject-color-chip {
+  display: inline-block;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  vertical-align: middle;
+}
+.subject-color-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+.status-badge.status-builtin { background: #6b7280; }
+.status-badge.status-custom { background: #8b5cf6; }
+
+.toggle-switch {
+  position: relative; width: 40px; height: 22px;
+  background: var(--border); border-radius: 11px;
+  cursor: pointer; transition: background 0.2s;
+}
+.toggle-switch.on { background: var(--accent); }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: white; transition: transform 0.2s;
+}
+.toggle-switch.on::after { transform: translateX(18px); }
+
+/* Backend status pill */
+.backend-pill {
+  display: inline-flex; align-items: center;
+  height: 28px; padding: 0 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 500;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.backend-pill.online {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border-color: var(--success);
+}
+.backend-pill.offline {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--muted);
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: var(--card);
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 13px; box-shadow: var(--shadow-lg);
+  opacity: 0; transition: all 0.25s;
+  pointer-events: none; z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+body.exporting .cal-header,
+body.exporting .topbar,
+body.exporting .tabs,
+body.exporting .cal-cell { cursor: default; }
+body.exporting .btn { display: none !important; }
+
+@media (max-width: 768px) {
+  .topbar { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+  .brand { font-size: 14px; }
+  .student-selector { margin-left: 0; flex: 1; }
+  .topbar-actions { width: 100%; justify-content: flex-end; }
+  main { padding: 14px; }
+  .cal-cell { min-height: 56px; padding: 3px; }
+  .cal-chip { font-size: 10px; padding: 2px 4px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .tabs { padding: 0 14px; overflow-x: auto; }
+  .tab { padding: 12px 14px; font-size: 13px; }
+  .status-legend { font-size: 11px; gap: 10px; }
+}
+
+/* === Export mode (Puppeteer) ===
+   When body.export-mode is set, the Web UI renders a clean printable
+   calendar: hide all chrome (topbar, tabs, buttons, filters, drawers,
+   modals) and show only the title, the calendar grid, and the legends.
+   The server-side PNG export pipeline (src/export-png.js) navigates to
+   this view with ?export=1&student=<id>&month=YYYY-MM. */
+body.export-mode {
+  background: #ffffff;
+  --bg: #ffffff;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #4f8ef7;
+  --accent-soft: #eff6ff;
+  --today-ring: #4f8ef7;
+  --shadow: none;
+  --shadow-lg: none;
+  --danger: #ef4444;
+  --overlay: transparent;
+}
+body.export-mode .topbar,
+body.export-mode .tabs,
+body.export-mode .cal-header button,
+body.export-mode .backend-pill,
+body.export-mode .student-menu,
+body.export-mode .settings-drawer,
+body.export-mode .modal-overlay,
+body.export-mode .toast,
+body.export-mode .day-drawer,
+body.export-mode .export-banner-hide {
+  display: none !important;
+}
+body.export-mode .cal-header {
+  justify-content: center;
+  margin-bottom: 14px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+body.export-mode .cal-title { font-size: 22px; }
+body.export-mode #calStudentLabel { font-size: 16px; }
+body.export-mode .status-legend { font-size: 11px; padding: 6px 10px; }
+body.export-mode .subject-legend { font-size: 11px; padding: 6px 10px; }
+body.export-mode main {
+  max-width: 1100px;
+  padding: 20px 24px;
+}
+body.export-mode .cal-cell { min-height: 92px; padding: 5px 6px; }
+body.export-mode .cal-chip { font-size: 11px; }
+.export-banner {
+  display: none;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.4px;
+}
+body.export-mode .export-banner { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo" data-i18n="app.brand.logo">暑</div>
+    <span data-i18n="app.name">卷王课程表</span>
+  </div>
+  <div class="student-selector" id="studentSelector">
+    <button class="student-btn" data-action="toggle-student-menu">
+      <span class="student-dot" id="currentStudentDot"></span>
+      <span id="currentStudentName">-</span>
+      <span style="opacity:0.5;font-size:14px">▾</span>
+    </button>
+    <div class="student-menu" id="studentMenu"></div>
+  </div>
+  <div class="topbar-actions">
+    <span class="backend-pill offline" id="backendPill" data-action="open-settings">offline</span>
+    <button class="btn btn-icon" data-action="open-settings" title="设置" data-i18n-title="btn.settings" style="font-size:16px;">⚙️</button>
+  </div>
+</header>
+
+<!-- Tabs -->
+<nav class="tabs">
+  <button class="tab active" data-view="calendar" data-i18n="tab.calendar">日历看板</button>
+  <button class="tab" data-view="students" data-i18n="tab.students">学生管理</button>
+  <button class="tab" data-view="courses" data-i18n="tab.courses">课程管理</button>
+  <button class="tab" data-view="subjects" data-i18n="tab.subjects">科目管理</button>
+</nav>
+
+<!-- Main -->
+<main>
+  <section class="view active" id="view-calendar">
+    <div class="export-banner" id="exportBanner"></div>
+    <div class="cal-header">
+      <span id="calStudentLabel" style="font-weight:600;margin-right:4px;font-size:14px;color:var(--text);"></span>
+      <button class="btn btn-icon" data-action="prev-month">◀</button>
+      <div class="cal-title" id="calTitle">2026年7月</div>
+      <button class="btn btn-icon" data-action="next-month">▶</button>
+      <button class="btn btn-sm" data-action="today" data-i18n="btn.today">今天</button>
+      <div style="margin-left:auto;">
+        <button class="btn" data-action="export-png" data-i18n="btn.export_png">导出图片</button>
+      </div>
+    </div>
+    <div class="status-legend" id="statusFilterLegend">
+      <span class="status-legend-title" data-i18n="legend.statuses">课程状态:</span>
+      <button class="status-legend-item" data-status="all"><span class="legend-swatch legend-all"></span><span data-i18n="status.all">全部</span></button>
+      <button class="status-legend-item" data-status="active"><span class="legend-swatch legend-active"></span><span data-i18n="status.active">进行中</span></button>
+      <button class="status-legend-item" data-status="upcoming"><span class="legend-swatch legend-upcoming"></span><span data-i18n="status.upcoming">未开始</span></button>
+      <button class="status-legend-item" data-status="done"><span class="legend-swatch legend-done"></span><span data-i18n="status.done">已结束</span></button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="subject-legend" id="subjectLegend">
+      <span class="status-legend-title" data-i18n="legend.subjects">课程科目:</span>
+    </div>
+  </section>
+
+  <section class="view" id="view-students">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:18px;font-weight:700;" data-i18n="view.students.title">学生管理</div>
+      <button class="btn btn-primary" data-action="new-student" data-i18n="btn.add_student">+ 新增学生</button>
+    </div>
+    <div class="cards-grid" id="studentsGrid"></div>
+  </section>
+
+  <section class="view" id="view-courses">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:18px;font-weight:700;">
+        <span data-i18n="view.courses.title">课程管理</span>
+        <span style="font-size:13px;color:var(--muted);font-weight:400;margin-left:8px;" id="coursesStudentLabel"></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" data-action="export-courses-png" data-i18n="btn.export_png">导出图片</button>
+        <button class="btn btn-primary" data-action="new-course" data-i18n="btn.add_course">+ 新增课程</button>
+      </div>
+    </div>
+    <div class="courses-list" id="coursesList"></div>
+  </section>
+
+  <section class="view" id="view-subjects">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:18px;font-weight:700;">
+        <span data-i18n="view.subjects.title">科目管理</span>
+        <span style="font-size:13px;color:var(--muted);font-weight:400;margin-left:8px;" id="subjectsCountLabel"></span>
+      </div>
+      <button class="btn btn-primary" data-action="new-subject" data-i18n="btn.add_subject">+ 新增科目</button>
+    </div>
+    <div class="courses-list" id="subjectsList"></div>
+  </section>
+</main>
+
+<!-- Day drawer -->
+<aside class="day-drawer" id="dayDrawer">
+  <div class="day-drawer-head">
+    <div class="day-drawer-title" id="dayDrawerTitle">课程详情</div>
+    <button class="btn btn-icon" data-action="close-day-drawer">✕</button>
+  </div>
+  <div class="day-drawer-body" id="dayDrawerBody"></div>
+</aside>
+
+<!-- Settings drawer -->
+<aside class="settings-drawer" id="settingsDrawer">
+  <div class="settings-drawer-head">
+    <div class="day-drawer-title" data-i18n="settings.title">设置</div>
+    <button class="btn btn-icon" data-action="close-settings">✕</button>
+  </div>
+  <div class="settings-drawer-body">
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.theme.label">深色模式</div>
+        <div class="setting-desc" data-i18n="settings.theme.desc">切换应用主题</div>
+      </div>
+      <div class="toggle-switch" id="themeToggle" data-action="toggle-theme"></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.lang.label">界面语言</div>
+        <div class="setting-desc" data-i18n="settings.lang.desc">切换中/英文界面</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" data-action="set-lang-zh" data-i18n="settings.lang.zh">中文</button>
+        <button class="btn btn-sm" data-action="set-lang-en" data-i18n="settings.lang.en">English</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.backend.label">本地数据服务</div>
+        <div class="setting-desc" data-i18n="settings.backend.desc">连接 juan-schedule web 服务后可与 CLI 共享数据</div>
+        <div class="setting-desc" id="backendStatusText">—</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <button class="btn btn-sm" data-action="detect-backend" data-i18n="settings.backend.detect">检测服务</button>
+        <button class="btn btn-sm" data-action="upload-to-backend" id="uploadToBackendBtn" data-i18n="settings.backend.upload">上传到本地服务</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.export_data.label">导出数据</div>
+        <div class="setting-desc" data-i18n="settings.export_data.desc">下载 JSON 备份</div>
+      </div>
+      <button class="btn btn-sm" data-action="export-json" data-i18n="settings.export_data.btn">导出</button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.import_data.label">导入数据</div>
+        <div class="setting-desc" data-i18n="settings.import_data.desc">从 JSON 文件恢复</div>
+      </div>
+      <button class="btn btn-sm" data-action="import-json" data-i18n="settings.import_data.btn">导入</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none">
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label" data-i18n="settings.reset.label">重置为示例数据</div>
+        <div class="setting-desc" data-i18n="settings.reset.desc">清空当前数据并恢复示例</div>
+      </div>
+      <button class="btn btn-sm btn-danger" data-action="reset-data" data-i18n="settings.reset.btn">重置</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Student modal -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-title" id="studentModalTitle">新增学生</div>
+      <button class="btn btn-icon" data-action="close-student-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label data-i18n="modal.student.label.name">姓名</label>
+        <input type="text" id="studentNameInput" data-i18n-placeholder="modal.student.placeholder.name" placeholder="例如：秦若宁">
+      </div>
+      <div class="form-row">
+        <label data-i18n="modal.student.label.color">颜色</label>
+        <div class="color-picker" id="studentColorPicker"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-action="close-student-modal" data-i18n="btn.cancel">取消</button>
+      <button class="btn btn-primary" id="studentModalSave" data-i18n="btn.save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Course modal -->
+<div class="modal-overlay" id="courseModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-head">
+      <div class="modal-title" id="courseModalTitle">新增课程</div>
+      <button class="btn btn-icon" data-action="close-course-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label data-i18n="modal.course.label.name">课程名称</label>
+        <input type="text" id="courseNameInput" data-i18n-placeholder="modal.course.placeholder.name" placeholder="例如：蓝天物理-2026暑假1期">
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label data-i18n="modal.course.label.subject">科目</label>
+          <select id="courseSubjectInput"></select>
+        </div>
+        <div class="form-row">
+          <label data-i18n="modal.course.label.class">班级</label>
+          <input type="text" id="courseClassInput" data-i18n-placeholder="modal.course.placeholder.class" placeholder="例如：P9睿学LH4">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label data-i18n="modal.course.label.start_date">开始日期</label>
+          <input type="date" id="courseStartDateInput">
+        </div>
+        <div class="form-row">
+          <label data-i18n="modal.course.label.end_date">结束日期</label>
+          <input type="date" id="courseEndDateInput">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label data-i18n="modal.course.label.start_time">开始时间</label>
+          <input type="time" id="courseStartTimeInput" value="08:30">
+        </div>
+        <div class="form-row">
+          <label data-i18n="modal.course.label.end_time">结束时间（可选）</label>
+          <input type="time" id="courseEndTimeInput">
+        </div>
+      </div>
+      <div class="form-row">
+        <label data-i18n="modal.course.label.location">上课地点</label>
+        <input type="text" id="courseLocationInput" data-i18n-placeholder="modal.course.placeholder.location" placeholder="例如：罗湖汇鑫教学点">
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label data-i18n="modal.course.label.teacher">教师</label>
+          <input type="text" id="courseTeacherInput" data-i18n-placeholder="modal.course.placeholder.teacher" placeholder="例如：冯惠">
+        </div>
+        <div class="form-row">
+          <label data-i18n="modal.course.label.room">教室</label>
+          <input type="text" id="courseRoomInput" data-i18n-placeholder="modal.course.placeholder.room" placeholder="例如：605 或 待定">
+        </div>
+      </div>
+      <div class="form-row">
+        <label><span data-i18n="modal.course.label.schedule">排课日期设置</span> <span style="color:var(--muted);font-weight:400;" data-i18n="modal.course.schedule.hint">（点击日期切换上课/休息，预设可快速选择）</span></label>
+        <div class="preset-bar">
+          <button type="button" class="btn btn-sm" data-action="preset-all" data-i18n="modal.course.preset.all">全选上课</button>
+          <button type="button" class="btn btn-sm" data-action="preset-weekdays" data-i18n="modal.course.preset.weekdays">仅工作日</button>
+          <button type="button" class="btn btn-sm" data-action="preset-5on1off" data-i18n="modal.course.preset.5on1off">上五休一</button>
+          <button type="button" class="btn btn-sm" data-action="preset-6on1off" data-i18n="modal.course.preset.6on1off">上六休一</button>
+          <button type="button" class="btn btn-sm" data-action="preset-none" data-i18n="modal.course.preset.none">全休息</button>
+        </div>
+        <div class="preview-list" id="coursePreview"></div>
+        <div id="coursePreviewSummary" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-action="close-course-modal" data-i18n="btn.cancel">取消</button>
+      <button class="btn btn-primary" id="courseModalSave" data-i18n="btn.save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subject modal -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-title" id="subjectModalTitle">新增科目</div>
+      <button class="btn btn-icon" data-action="close-subject-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label data-i18n="modal.subject.label.name">科目名称</label>
+        <input type="text" id="subjectNameInput" data-i18n-placeholder="modal.subject.placeholder.name" placeholder="例如：生物" maxlength="12">
+      </div>
+      <div class="form-row">
+        <label data-i18n="modal.subject.label.color">颜色</label>
+        <div class="color-picker" id="subjectColorPicker"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-action="close-subject-modal" data-i18n="btn.cancel">取消</button>
+      <button class="btn btn-primary" id="subjectModalSave" data-i18n="btn.save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="modal-title" id="confirmTitle">确认</div>
+    </div>
+    <div class="modal-body">
+      <div id="confirmMessage" style="font-size:14px;">确定执行此操作？</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-action="cancel-confirm" data-i18n="btn.cancel">取消</button>
+      <button class="btn btn-danger" id="confirmOk" data-i18n="btn.confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- html2canvas CDN -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// i18n — embedded dictionaries (kept in sync with src/i18n/*.json)
+// ============================================================
+const I18N = {
+  zh: {
+    'app.name': '卷王课程表',
+    'app.brand.logo': '暑',
+    'tab.calendar': '日历看板',
+    'tab.students': '学生管理',
+    'tab.courses': '课程管理',
+    'tab.subjects': '科目管理',
+    'btn.today': '今天',
+    'btn.export_png': '导出图片',
+    'btn.save': '保存',
+    'btn.cancel': '取消',
+    'btn.confirm': '确定',
+    'btn.edit': '编辑',
+    'btn.delete': '删除',
+    'btn.add_student': '+ 新增学生',
+    'btn.add_course': '+ 新增课程',
+    'btn.add_subject': '+ 新增科目',
+    'btn.settings': '设置',
+    'status.all': '全部',
+    'status.active': '进行中',
+    'status.upcoming': '未开始',
+    'status.done': '已结束',
+    'legend.subjects': '课程科目:',
+    'legend.statuses': '课程状态:',
+    'view.students.title': '学生管理',
+    'view.courses.title': '课程管理',
+    'view.subjects.title': '科目管理',
+    'empty.no_students': '还没有学生，点击右上角新增',
+    'empty.no_courses': '该学生还没有课程，点击右上角新增',
+    'empty.no_subjects': '还没有科目',
+    'empty.no_courses_need_student': '请先在「学生管理」中添加学生',
+    'empty.no_subjects_for_student': '该学生暂无课程',
+    'modal.student.title_new': '新增学生',
+    'modal.student.title_edit': '编辑学生',
+    'modal.student.label.name': '姓名',
+    'modal.student.placeholder.name': '例如：秦若宁',
+    'modal.student.label.color': '颜色',
+    'modal.course.title_new': '新增课程',
+    'modal.course.title_edit': '编辑课程',
+    'modal.course.label.name': '课程名称',
+    'modal.course.placeholder.name': '例如：蓝天物理-2026暑假1期',
+    'modal.course.label.subject': '科目',
+    'modal.course.label.class': '班级',
+    'modal.course.placeholder.class': '例如：P9睿学LH4',
+    'modal.course.label.start_date': '开始日期',
+    'modal.course.label.end_date': '结束日期',
+    'modal.course.label.start_time': '开始时间',
+    'modal.course.label.end_time': '结束时间（可选）',
+    'modal.course.label.location': '上课地点',
+    'modal.course.placeholder.location': '例如：罗湖汇鑫教学点',
+    'modal.course.label.teacher': '教师',
+    'modal.course.placeholder.teacher': '例如：冯惠',
+    'modal.course.label.room': '教室',
+    'modal.course.placeholder.room': '例如：605 或 待定',
+    'modal.course.label.schedule': '排课日期设置',
+    'modal.course.schedule.hint': '（点击日期切换上课/休息，预设可快速选择）',
+    'modal.course.preset.all': '全选上课',
+    'modal.course.preset.weekdays': '仅工作日',
+    'modal.course.preset.5on1off': '上五休一',
+    'modal.course.preset.6on1off': '上六休一',
+    'modal.course.preset.none': '全休息',
+    'modal.subject.title_new': '新增科目',
+    'modal.subject.title_edit': '编辑科目',
+    'modal.subject.label.name': '科目名称',
+    'modal.subject.placeholder.name': '例如：生物',
+    'modal.subject.placeholder.builtin': '（内置科目不可重命名）',
+    'modal.subject.label.color': '颜色',
+    'modal.confirm.title': '确认',
+    'modal.confirm.default_message': '确定执行此操作？',
+    'subject.type.builtin': '内置',
+    'subject.type.custom': '自定义',
+    'subject.meta.references': '{n} 门课程引用',
+    'subject.count.label': '共 {total} 个 · 自定义 {custom} 个',
+    'course.meta.summary': '共 {total} 天 / 上课 {class} 天{rest}',
+    'course.meta.summary.rest': ' / 休息 {n} 天',
+    'course.meta.summary.no_rest': '',
+    'toast.saved': '已保存',
+    'toast.need_name': '请填写姓名',
+    'toast.invalid_range': '请先设置有效的开始和结束日期',
+    'day_drawer.title': '课程详情',
+    'day_drawer.empty': '当日无课程',
+    'settings.title': '设置',
+    'settings.theme.label': '深色模式',
+    'settings.theme.desc': '切换应用主题',
+    'settings.lang.label': '界面语言',
+    'settings.lang.desc': '切换中/英文界面',
+    'settings.lang.zh': '中文',
+    'settings.lang.en': 'English',
+    'settings.backend.label': '本地数据服务',
+    'settings.backend.desc': '连接 juan-schedule web 服务后可与 CLI 共享数据',
+    'settings.backend.detect': '检测服务',
+    'settings.backend.detected': '已连接',
+    'settings.backend.offline': '离线（仅 localStorage）',
+    'settings.backend.upload': '上传到本地服务',
+    'settings.backend.uploaded': '已上传到本地服务',
+    'settings.export_data.label': '导出数据',
+    'settings.export_data.desc': '下载 JSON 备份',
+    'settings.export_data.btn': '导出',
+    'settings.import_data.label': '导入数据',
+    'settings.import_data.desc': '从 JSON 文件恢复',
+    'settings.import_data.btn': '导入',
+    'settings.reset.label': '重置为示例数据',
+    'settings.reset.desc': '清空当前数据并恢复示例',
+    'settings.reset.btn': '重置',
+    'student.card.courses': '{n} 门课程',
+    'student.menu.courses': '{n} 门课',
+    'student.menu.manage': '学生管理...',
+    'msg.confirm.delete_student': '确定删除学生「{name}」？该学生的所有课程也会被删除。',
+    'msg.confirm.delete_course': '确定删除课程「{name}」？',
+    'msg.confirm.delete_subject': '确定删除科目「{name}」？引用此科目的课程将变为无科目。',
+    'msg.confirm.reset': '确定清空当前数据并恢复示例数据？',
+    'error.name_required': '请填写姓名',
+    'error.subject_name_required': '请填写科目名称',
+    'error.id_not_found': '找不到 ID 为 {id} 的记录',
+    'error.duplicate_subject': '该科目已存在',
+    'error.builtin_locked': '内置科目不可删除',
+    'error.subject_in_use': '该科目被 {n} 门课程引用，无法删除',
+    'status.pill.online': '已连接',
+    'status.pill.offline': '离线',
+  },
+  en: {
+    'app.name': 'Juan Schedule',
+    'app.brand.logo': 'J',
+    'tab.calendar': 'Calendar',
+    'tab.students': 'Students',
+    'tab.courses': 'Courses',
+    'tab.subjects': 'Subjects',
+    'btn.today': 'Today',
+    'btn.export_png': 'Export PNG',
+    'btn.save': 'Save',
+    'btn.cancel': 'Cancel',
+    'btn.confirm': 'OK',
+    'btn.edit': 'Edit',
+    'btn.delete': 'Delete',
+    'btn.add_student': '+ New Student',
+    'btn.add_course': '+ New Course',
+    'btn.add_subject': '+ New Subject',
+    'btn.settings': 'Settings',
+    'status.all': 'All',
+    'status.active': 'Active',
+    'status.upcoming': 'Upcoming',
+    'status.done': 'Finished',
+    'legend.subjects': 'Subjects:',
+    'legend.statuses': 'Status:',
+    'view.students.title': 'Students',
+    'view.courses.title': 'Courses',
+    'view.subjects.title': 'Subjects',
+    'empty.no_students': 'No students yet. Click + New Student to add one.',
+    'empty.no_courses': 'No courses for this student. Click + New Course to add one.',
+    'empty.no_subjects': 'No subjects yet',
+    'empty.no_courses_need_student': 'Add a student in the Students tab first.',
+    'empty.no_subjects_for_student': 'This student has no courses.',
+    'modal.student.title_new': 'New Student',
+    'modal.student.title_edit': 'Edit Student',
+    'modal.student.label.name': 'Name',
+    'modal.student.placeholder.name': 'e.g. Alex',
+    'modal.student.label.color': 'Color',
+    'modal.course.title_new': 'New Course',
+    'modal.course.title_edit': 'Edit Course',
+    'modal.course.label.name': 'Course Name',
+    'modal.course.placeholder.name': 'e.g. Physics Summer 2026',
+    'modal.course.label.subject': 'Subject',
+    'modal.course.label.class': 'Class',
+    'modal.course.placeholder.class': 'e.g. P9-LH4',
+    'modal.course.label.start_date': 'Start Date',
+    'modal.course.label.end_date': 'End Date',
+    'modal.course.label.start_time': 'Start Time',
+    'modal.course.label.end_time': 'End Time (optional)',
+    'modal.course.label.location': 'Location',
+    'modal.course.placeholder.location': 'e.g. Downtown Campus',
+    'modal.course.label.teacher': 'Teacher',
+    'modal.course.placeholder.teacher': 'e.g. Ms. Smith',
+    'modal.course.label.room': 'Room',
+    'modal.course.placeholder.room': 'e.g. 605 or TBD',
+    'modal.course.label.schedule': 'Schedule',
+    'modal.course.schedule.hint': '(click a date to toggle class/rest; presets for quick setup)',
+    'modal.course.preset.all': 'All class',
+    'modal.course.preset.weekdays': 'Weekdays only',
+    'modal.course.preset.5on1off': '5 on / 1 off',
+    'modal.course.preset.6on1off': '6 on / 1 off',
+    'modal.course.preset.none': 'All rest',
+    'modal.subject.title_new': 'New Subject',
+    'modal.subject.title_edit': 'Edit Subject',
+    'modal.subject.label.name': 'Subject Name',
+    'modal.subject.placeholder.name': 'e.g. Biology',
+    'modal.subject.placeholder.builtin': '(built-in subjects cannot be renamed)',
+    'modal.subject.label.color': 'Color',
+    'modal.confirm.title': 'Confirm',
+    'modal.confirm.default_message': 'Are you sure?',
+    'subject.type.builtin': 'built-in',
+    'subject.type.custom': 'custom',
+    'subject.meta.references': '{n} courses',
+    'subject.count.label': '{total} total · {custom} custom',
+    'course.meta.summary': '{total} days total · {class} class{rest}',
+    'course.meta.summary.rest': ' · {n} rest',
+    'course.meta.summary.no_rest': '',
+    'toast.saved': 'Saved',
+    'toast.need_name': 'Name is required',
+    'toast.invalid_range': 'Please set a valid date range first',
+    'day_drawer.title': 'Course Details',
+    'day_drawer.empty': 'No courses on this day',
+    'settings.title': 'Settings',
+    'settings.theme.label': 'Dark mode',
+    'settings.theme.desc': 'Toggle app theme',
+    'settings.lang.label': 'Language',
+    'settings.lang.desc': 'Switch interface language',
+    'settings.lang.zh': '中文',
+    'settings.lang.en': 'English',
+    'settings.backend.label': 'Local data service',
+    'settings.backend.desc': 'Connect to juan-schedule web for CLI/Agent sharing',
+    'settings.backend.detect': 'Detect',
+    'settings.backend.detected': 'Connected',
+    'settings.backend.offline': 'Offline (localStorage only)',
+    'settings.backend.upload': 'Upload to local service',
+    'settings.backend.uploaded': 'Uploaded to local service',
+    'settings.export_data.label': 'Export data',
+    'settings.export_data.desc': 'Download JSON backup',
+    'settings.export_data.btn': 'Export',
+    'settings.import_data.label': 'Import data',
+    'settings.import_data.desc': 'Restore from JSON file',
+    'settings.import_data.btn': 'Import',
+    'settings.reset.label': 'Reset to sample data',
+    'settings.reset.desc': 'Clear current data and restore sample',
+    'settings.reset.btn': 'Reset',
+    'student.card.courses': '{n} courses',
+    'student.menu.courses': '{n} courses',
+    'student.menu.manage': 'Manage students...',
+    'msg.confirm.delete_student': 'Delete student "{name}"? All their courses will be removed too.',
+    'msg.confirm.delete_course': 'Delete course "{name}"?',
+    'msg.confirm.delete_subject': 'Delete subject "{name}"? Courses using it will become unassigned.',
+    'msg.confirm.reset': 'Clear current data and restore sample data?',
+    'error.name_required': 'Name is required',
+    'error.subject_name_required': 'Subject name is required',
+    'error.id_not_found': 'No record found with id {id}',
+    'error.duplicate_subject': 'Subject already exists',
+    'error.builtin_locked': 'Built-in subjects cannot be deleted',
+    'error.subject_in_use': '{n} courses use this subject; cannot delete',
+    'status.pill.online': 'online',
+    'status.pill.offline': 'offline',
+  },
+};
+
+let currentLang = 'zh';
+function t(key, vars) {
+  const dict = I18N[currentLang] || I18N.zh;
+  let s = dict[key];
+  if (s === undefined) s = I18N.zh[key] !== undefined ? I18N.zh[key] : key;
+  if (vars && typeof s === 'string') {
+    s = s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
+  }
+  return s;
+}
+function applyI18n() {
+  document.documentElement.lang = currentLang === 'en' ? 'en' : 'zh-CN';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  const titleEl = document.querySelector('title');
+  if (titleEl) titleEl.textContent = t('app.name');
+}
+
+// ============================================================
+// Constants
+// ============================================================
+const STORAGE_KEY = 'summerScheduleApp_v1';
+const PALETTE = ['#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16'];
+const BUILT_IN_SUBJECTS = [
+  { name: '物理', color: '#3b82f6' },
+  { name: '化学', color: '#06b6d4' },
+  { name: '数学', color: '#10b981' },
+  { name: '英语', color: '#f59e0b' },
+  { name: '语文', color: '#ec4899' },
+  { name: '其他', color: '#8b5cf6' },
+];
+const CUSTOM_SUBJECT_PALETTE = [
+  '#ef4444', '#f97316', '#eab308', '#84cc16',
+  '#22c55e', '#14b8a6', '#0ea5e9', '#6366f1',
+  '#a855f7', '#d946ef', '#f43f5e', '#64748b',
+];
+const WEEKDAY_NAMES_CN = ['一', '二', '三', '四', '五', '六', '日'];
+const WEEKDAY_NAMES_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const BACKEND_URL = (typeof location !== 'undefined' &&
+                     location.protocol === 'file:' ? 'http://localhost:3737' : null) || null;
+
+// ============================================================
+// Backend abstraction — localStorage vs HTTP
+// ============================================================
+let Store = null;
+let Backend = null; // 'local' | 'http'
+
+const LocalBackend = {
+  name: 'local',
+  read() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  },
+  write(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  },
+};
+
+const HttpBackend = {
+  name: 'http',
+  // Use a relative base URL so the page works regardless of which
+  // localhost port it was served from. The embedded in-process server
+  // (used by Puppeteer export) picks a random port, so the hardcoded
+  // 3737 from earlier wouldn't work.
+  baseUrl: '',
+  async read() {
+    const r = await fetch(this.baseUrl + '/api/data');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  },
+  async write(data) {
+    const r = await fetch(this.baseUrl + '/api/data', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  },
+  async import(data) {
+    const r = await fetch(this.baseUrl + '/api/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  },
+};
+
+async function detectBackend() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 500);
+    const r = await fetch('http://localhost:3737/api/ping', { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) {
+      Backend = HttpBackend;
+      return 'http';
+    }
+  } catch (_) { /* fall through */ }
+  Backend = LocalBackend;
+  return 'local';
+}
+
+function loadStore() {
+  // Try to read from the active backend. If HTTP fails, fall back to local.
+  if (Backend && Backend.name === 'http') {
+    HttpBackend.read().then(data => {
+      if (data) {
+        Store = data;
+        saveStoreLocalMirror();
+        renderAll();
+      }
+    }).catch(() => {
+      Backend = LocalBackend;
+      loadStoreFromLocal();
+      updateBackendPill();
+    });
+    return;
+  }
+  loadStoreFromLocal();
+}
+
+function loadStoreFromLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      Store = JSON.parse(raw);
+      migrateStore(Store);
+      saveStore();
+      return;
+    }
+  } catch (e) { console.warn('Failed to load store', e); }
+  Store = seedSampleData();
+  saveStore();
+}
+
+// Always mirror current Store to localStorage so the offline fallback works.
+function saveStoreLocalMirror() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Store)); } catch (_) {}
+}
+
+function migrateStore(store) {
+  if (!store.courses) return;
+  if (typeof store.subjects === 'undefined') {
+    store.subjects = BUILT_IN_SUBJECTS.map(s => ({ ...s, builtIn: true }));
+  }
+  if (typeof store.lang === 'undefined') store.lang = 'zh';
+  if (typeof store.version === 'undefined') store.version = 1;
+}
+
+function saveStore() {
+  saveStoreLocalMirror();
+  if (Backend && Backend.name === 'http') {
+    HttpBackend.write(Store).catch(err => {
+      console.warn('HTTP write failed, staying on local', err);
+      Backend = LocalBackend;
+      updateBackendPill();
+    });
+  }
+}
+
+function updateStore(fn) {
+  fn(Store);
+  saveStore();
+}
+
+function getSubjectColor(name) {
+  if (!name) return BUILT_IN_SUBJECTS[5].color;
+  const s = (Store.subjects || []).find(x => x.name === name);
+  if (s) return s.color;
+  const builtIn = BUILT_IN_SUBJECTS.find(x => x.name === name);
+  return builtIn ? builtIn.color : BUILT_IN_SUBJECTS[5].color;
+}
+function isBuiltInSubject(name) {
+  return BUILT_IN_SUBJECTS.some(x => x.name === name);
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function genId(prefix) {
+  return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+function parseISO(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+function toISO(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+function todayISO() { return toISO(new Date()); }
+function fmtMonth(yearMonth) {
+  const [y, m] = yearMonth.split('-');
+  if (currentLang === 'en') {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m-1]} ${y}`;
+  }
+  return `${y}年${parseInt(m, 10)}月`;
+}
+function fmtDateCN(iso) {
+  const d = parseISO(iso);
+  if (currentLang === 'en') {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[d.getMonth()]} ${d.getDate()}`;
+  }
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+function fmtDateFull(iso) {
+  const d = parseISO(iso);
+  const dow = (currentLang === 'en' ? WEEKDAY_NAMES_EN : WEEKDAY_NAMES_CN)[(d.getDay() + 6) % 7];
+  if (currentLang === 'en') {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${dow}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 周${dow}`;
+}
+function fmtTimeRange(start, end) { return end ? `${start} - ${end}` : start; }
+function getCurrentStudent() {
+  return Store.students.find(s => s.id === Store.currentStudentId) || Store.students[0];
+}
+function getCoursesByStudent(studentId) {
+  return Store.courses.filter(c => c.studentId === studentId);
+}
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function currentWeekdayNames() {
+  return currentLang === 'en' ? WEEKDAY_NAMES_EN : WEEKDAY_NAMES_CN;
+}
+
+function generateClassDates(course) {
+  if (!course.startDate || !course.endDate) return [];
+  const dates = [];
+  const rest = new Set(course.restDates || []);
+  for (let d = new Date(parseISO(course.startDate)); d <= parseISO(course.endDate); d.setDate(d.getDate() + 1)) {
+    const iso = toISO(d);
+    if (!rest.has(iso)) dates.push(iso);
+  }
+  return dates;
+}
+function isCourseActive(course, refDate) {
+  const today = refDate || todayISO();
+  if (today < course.startDate) return 'upcoming';
+  if (today > course.endDate) return 'done';
+  return 'active';
+}
+function countRangeDays(startIso, endIso) {
+  if (!startIso || !endIso || startIso > endIso) return 0;
+  const s = parseISO(startIso), e = parseISO(endIso);
+  return Math.floor((e - s) / 86400000) + 1;
+}
+function listRangeDates(startIso, endIso) {
+  if (!startIso || !endIso || startIso > endIso) return [];
+  const out = [];
+  for (let d = new Date(parseISO(startIso)); d <= parseISO(endIso); d.setDate(d.getDate() + 1)) out.push(toISO(d));
+  return out;
+}
+
+// ============================================================
+// Sample data seeding
+// ============================================================
+function seedSampleData() {
+  const stu1 = { id: genId('stu'), name: '秦若宁', color: PALETTE[0] };
+  const stu2 = { id: genId('stu'), name: '秦若媛', color: PALETTE[3] };
+  const courses = [
+    { id: genId('c'), studentId: stu1.id, name: '蓝天物理-2026暑假1期', subject: '物理', className: 'P9睿学LH4',
+      startDate: '2026-07-12', endDate: '2026-07-28', startTime: '08:30', endTime: '11:00',
+      location: '罗湖汇鑫教学点', teacher: '冯惠', room: '605', restDates: ['2026-07-12','2026-07-19','2026-07-26'] },
+    { id: genId('c'), studentId: stu1.id, name: '蓝天数学-2026暑假1期', subject: '数学', className: 'M9好学LH4',
+      startDate: '2026-07-12', endDate: '2026-07-28', startTime: '15:00', endTime: '17:30',
+      location: '罗湖汇鑫教学点', teacher: '刘啸云', room: '407', restDates: ['2026-07-12','2026-07-19','2026-07-26'] },
+    { id: genId('c'), studentId: stu1.id, name: '华青英语-2026暑假', subject: '英语', className: '暑假小组课',
+      startDate: '2026-08-06', endDate: '2026-08-28', startTime: '10:30', endTime: '12:30',
+      location: '文锦广场A座', teacher: '海瑞老师', room: '406', restDates: ['2026-08-11','2026-08-17','2026-08-23'] },
+    { id: genId('c'), studentId: stu1.id, name: '华启语文-2026暑假', subject: '语文', className: '暑假小组课',
+      startDate: '2026-08-06', endDate: '2026-08-28', startTime: '15:00', endTime: '17:30',
+      location: '华启学府', teacher: '千喜老师', room: '待定', restDates: ['2026-08-11','2026-08-17','2026-08-23'] },
+    { id: genId('c'), studentId: stu2.id, name: '蓝天语文-2026暑假1期', subject: '语文', className: 'C9素养LH2',
+      startDate: '2026-07-12', endDate: '2026-07-28', startTime: '15:00', endTime: '',
+      location: '罗湖汇鑫教学点', teacher: '张智超', room: '512', restDates: ['2026-07-12','2026-07-19','2026-07-26'] },
+    { id: genId('c'), studentId: stu2.id, name: '蓝天数学-2026暑假1期', subject: '数学', className: 'M9睿学LH11',
+      startDate: '2026-07-12', endDate: '2026-07-28', startTime: '18:00', endTime: '',
+      location: '罗湖汇鑫教学点', teacher: '高源悦', room: '406', restDates: ['2026-07-12','2026-07-19','2026-07-26'] },
+    { id: genId('c'), studentId: stu2.id, name: '大朋友英语-2026暑假', subject: '英语', className: '三期J3-3',
+      startDate: '2026-08-15', endDate: '2026-08-27', startTime: '16:15', endTime: '18:15',
+      location: '万科俊园', teacher: 'Phoebe Chen', room: '待定', restDates: ['2026-08-16','2026-08-23'] },
+  ];
+  return {
+    students: [stu1, stu2],
+    courses,
+    subjects: BUILT_IN_SUBJECTS.map(s => ({ ...s, builtIn: true })),
+    currentStudentId: stu1.id,
+    currentView: 'calendar',
+    currentMonth: '2026-07',
+    theme: 'light',
+    statusFilter: 'all',
+    lang: currentLang,
+    version: 1,
+    initialized: true
+  };
+}
+
+// ============================================================
+// Rendering
+// ============================================================
+function updateBackendPill() {
+  const pill = document.getElementById('backendPill');
+  const statusText = document.getElementById('backendStatusText');
+  if (!pill) return;
+  const online = Backend && Backend.name === 'http';
+  pill.classList.toggle('online', online);
+  pill.classList.toggle('offline', !online);
+  pill.textContent = online ? t('status.pill.online') : t('status.pill.offline');
+  if (statusText) {
+    statusText.textContent = online ? t('settings.backend.detected') : t('settings.backend.offline');
+  }
+  const uploadBtn = document.getElementById('uploadToBackendBtn');
+  if (uploadBtn) uploadBtn.style.display = online ? 'none' : '';
+}
+
+function renderTopBar() {
+  const stu = getCurrentStudent();
+  document.getElementById('currentStudentName').textContent = stu ? stu.name : '-';
+  document.getElementById('currentStudentDot').style.background = stu ? stu.color : 'var(--accent)';
+  const menu = document.getElementById('studentMenu');
+  menu.innerHTML = Store.students.map(s => `
+    <button class="student-menu-item" data-action="select-student" data-id="${s.id}">
+      <span class="student-dot" style="background:${s.color}"></span>
+      <span>${escapeHtml(s.name)}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted);">${t('student.menu.courses', { n: getCoursesByStudent(s.id).length })}</span>
+    </button>
+  `).join('') + `
+    <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">
+      <button class="student-menu-item" data-action="switch-to-students">
+        <span style="font-size:16px;">⚙️</span><span>${t('student.menu.manage')}</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.view === Store.currentView);
+  });
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.toggle('active', v.id === 'view-' + Store.currentView);
+  });
+}
+
+function renderCalendar() {
+  const [y, m] = Store.currentMonth.split('-').map(Number);
+  document.getElementById('calTitle').textContent = fmtMonth(Store.currentMonth);
+  const stu = getCurrentStudent();
+  document.getElementById('calStudentLabel').textContent = stu ? stu.name + ' · ' : '';
+  // In export mode, fill the export banner with a clean caption so the
+  // Puppeteer screenshot has a clear "who + when" header.
+  const banner = document.getElementById('exportBanner');
+  if (banner) {
+    if (document.body.classList.contains('export-mode') && stu) {
+      banner.textContent = `${t('app.name')} · ${stu.name} · ${fmtMonth(Store.currentMonth)}`;
+    } else {
+      banner.textContent = '';
+    }
+  }
+  const firstDay = new Date(y, m - 1, 1);
+  const startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+  const startDate = new Date(y, m - 1, 1 - startOffset);
+  const studentCourses = getCoursesByStudent(Store.currentStudentId);
+  const dateMap = {};
+  studentCourses.forEach(course => {
+    const status = isCourseActive(course);
+    if (Store.statusFilter !== 'all' && Store.statusFilter !== status) return;
+    generateClassDates(course).forEach(iso => {
+      if (iso.startsWith(Store.currentMonth)) {
+        if (!dateMap[iso]) dateMap[iso] = [];
+        dateMap[iso].push(course);
+      }
+    });
+  });
+  const todayIso = todayISO();
+  const wnames = currentWeekdayNames();
+  let html = wnames.map((w, i) =>
+    `<div class="cal-dow ${i === 5 || i === 6 ? 'weekend' : ''}">${w}</div>`
+  ).join('');
+  for (let i = 0; i < 42; i++) {
+    const cellDate = new Date(startDate);
+    cellDate.setDate(startDate.getDate() + i);
+    const iso = toISO(cellDate);
+    const isOtherMonth = cellDate.getMonth() !== m - 1;
+    const isToday = iso === todayIso;
+    const courses = dateMap[iso] || [];
+    courses.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const maxChips = 3;
+    const visible = courses.slice(0, maxChips);
+    const more = courses.length - visible.length;
+    const cellClass = ['cal-cell', isOtherMonth ? 'other-month' : '', isToday ? 'today' : ''].filter(Boolean).join(' ');
+    html += `<div class="${cellClass}" data-action="open-day" data-date="${iso}">
+      <div class="cal-day-num">${cellDate.getDate()}</div>
+      ${visible.map(c => {
+        const status = isCourseActive(c);
+        const dotColor = getSubjectColor(c.subject);
+        const statusLabel = t('status.' + status);
+        return `
+        <div class="cal-chip course-status-${status}" title="${escapeHtml(c.name)} · ${c.startTime}${c.endTime ? '~'+c.endTime : ''} · ${statusLabel}">
+          <span class="status-dot" style="background:${dotColor}"></span>
+          <span class="cal-chip-time">${c.startTime}</span>
+          <span>${c.subject}</span>
+        </div>
+      `;
+      }).join('')}
+      ${more > 0 ? `<div class="cal-chip-more">+${more}</div>` : ''}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+  renderSubjectLegend();
+  renderStatusFilter();
+}
+
+function renderStatusFilter() {
+  document.querySelectorAll('#statusFilterLegend .status-legend-item').forEach(p =>
+    p.classList.toggle('active', p.dataset.status === Store.statusFilter)
+  );
+}
+
+function renderSubjectLegend() {
+  const legend = document.getElementById('subjectLegend');
+  if (!legend) return;
+  const subjects = Store.subjects || [];
+  const stu = getCurrentStudent();
+  if (!stu) {
+    legend.innerHTML = `<span class="status-legend-title">${t('legend.subjects')}</span><span style="color:var(--muted);font-size:12px;">—</span>`;
+    return;
+  }
+  const used = new Set();
+  Store.courses.forEach(c => {
+    if (c.studentId === stu.id && c.subject) used.add(c.subject);
+  });
+  const visible = subjects.filter(s => used.has(s.name));
+  if (visible.length === 0) {
+    legend.innerHTML = `<span class="status-legend-title">${t('legend.subjects')}</span><span style="color:var(--muted);font-size:12px;">${t('empty.no_subjects_for_student')}</span>`;
+    return;
+  }
+  legend.innerHTML = `<span class="status-legend-title">${t('legend.subjects')}</span>` + visible.map(s =>
+    `<span class="status-legend-item" style="cursor:default;"><span class="legend-dot" style="background:${s.color}"></span>${escapeHtml(s.name)}</span>`
+  ).join('');
+}
+
+function renderSubjectSelect() {
+  const select = document.getElementById('courseSubjectInput');
+  if (!select) return;
+  select.innerHTML = (Store.subjects || []).map(s =>
+    `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`
+  ).join('');
+}
+
+function renderSubjectManager() {
+  const list = document.getElementById('subjectsList');
+  const label = document.getElementById('subjectsCountLabel');
+  if (!list) return;
+  const subjects = Store.subjects || [];
+  if (label) {
+    const customCount = subjects.filter(s => !isBuiltInSubject(s.name)).length;
+    label.textContent = t('subject.count.label', { total: subjects.length, custom: customCount });
+  }
+  if (subjects.length === 0) {
+    list.innerHTML = `<div class="empty-state">${t('empty.no_subjects')}</div>`;
+    return;
+  }
+  list.innerHTML = subjects.map(s => {
+    const builtIn = isBuiltInSubject(s.name);
+    const typeLabel = t('subject.type.' + (builtIn ? 'builtin' : 'custom'));
+    const courseCount = Store.courses.filter(c => c.subject === s.name).length;
+    return `
+      <div class="subject-row" style="border-left-color:${s.color};">
+        <div class="subject-info">
+          <div class="subject-title">
+            <span class="status-dot" style="background:${s.color}"></span>
+            ${escapeHtml(s.name)}
+            <span class="status-badge status-${builtIn ? 'builtin' : 'custom'}">${typeLabel}</span>
+          </div>
+          <div class="subject-meta">
+            <span class="subject-meta-item">📚 ${t('subject.meta.references', { n: courseCount })}</span>
+            <span class="subject-meta-item">
+              <span class="subject-color-chip" style="background:${s.color}"></span>
+              <span class="subject-color-hex">${s.color.toUpperCase()}</span>
+            </span>
+          </div>
+        </div>
+        <div class="subject-actions">
+          <button class="btn btn-sm" data-action="edit-subject" data-name="${escapeHtml(s.name)}">${t('btn.edit')}</button>
+          ${builtIn ? '' : `<button class="btn btn-sm btn-danger" data-action="delete-subject" data-name="${escapeHtml(s.name)}">${t('btn.delete')}</button>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStudents() {
+  const grid = document.getElementById('studentsGrid');
+  if (Store.students.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${t('empty.no_students')}</div>`;
+    return;
+  }
+  grid.innerHTML = Store.students.map(s => `
+    <div class="student-card">
+      <div class="student-card-head">
+        <div class="student-color" style="background:${s.color}"></div>
+        <div>
+          <div class="student-card-name">${escapeHtml(s.name)}</div>
+          <div class="student-card-meta">${t('student.card.courses', { n: getCoursesByStudent(s.id).length })}</div>
+        </div>
+      </div>
+      <div class="student-card-actions">
+        <button class="btn btn-sm" data-action="edit-student" data-id="${s.id}">${t('btn.edit')}</button>
+        <button class="btn btn-sm" data-action="select-student-and-courses" data-id="${s.id}">${t('tab.courses')}</button>
+        <button class="btn btn-sm btn-danger" data-action="delete-student" data-id="${s.id}" style="margin-left:auto">${t('btn.delete')}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCourses() {
+  const stu = getCurrentStudent();
+  document.getElementById('coursesStudentLabel').textContent = stu ? `· ${stu.name}` : '';
+  const list = document.getElementById('coursesList');
+  if (!stu) {
+    list.innerHTML = `<div class="empty-state">${t('empty.no_courses_need_student')}</div>`;
+    return;
+  }
+  const courses = getCoursesByStudent(stu.id)
+    .slice()
+    .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+  if (courses.length === 0) {
+    list.innerHTML = `<div class="empty-state">${t('empty.no_courses')}</div>`;
+    return;
+  }
+  list.innerHTML = courses.map(c => {
+    const dates = generateClassDates(c);
+    const status = isCourseActive(c);
+    const dotColor = getSubjectColor(c.subject);
+    const statusLabel = t('status.' + status);
+    const totalDays = countRangeDays(c.startDate, c.endDate);
+    const restCount = (c.restDates || []).filter(d => d >= c.startDate && d <= c.endDate).length;
+    const restPart = restCount > 0 ? t('course.meta.summary.rest', { n: restCount }) : '';
+    const summary = t('course.meta.summary', { total: totalDays, class: dates.length, rest: restPart });
+    return `
+      <div class="course-row course-row-status-${status}">
+        <div class="course-info">
+          <div class="course-title">
+            <span class="status-dot" style="background:${dotColor}"></span>
+            ${escapeHtml(c.name)}
+            <span class="status-badge status-${status}">${statusLabel}</span>
+          </div>
+          <div class="course-meta">
+            <span class="course-meta-item">📚 ${escapeHtml(c.className || '-')}</span>
+            <span class="course-meta-item">📅 ${fmtDateCN(c.startDate)} ~ ${fmtDateCN(c.endDate)}</span>
+            <span class="course-meta-item">⏰ ${fmtTimeRange(c.startTime, c.endTime)}</span>
+            <span class="course-meta-item">📍 ${escapeHtml(c.location || '-')}</span>
+            <span class="course-meta-item">👤 ${escapeHtml(c.teacher || '-')}</span>
+            <span class="course-meta-item">🚪 ${escapeHtml(c.room || '-')}</span>
+            <span class="course-meta-item">✅ ${summary}</span>
+          </div>
+        </div>
+        <div class="course-actions">
+          <button class="btn btn-sm" data-action="edit-course" data-id="${c.id}">${t('btn.edit')}</button>
+          <button class="btn btn-sm btn-danger" data-action="delete-course" data-id="${c.id}">${t('btn.delete')}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// Modals
+// ============================================================
+let editingStudentId = null;
+let editingCourseId = null;
+let editingCourseRestDates = [];
+let editingSubjectOriginalName = null;
+let confirmCallback = null;
+
+function openStudentModal(id) {
+  editingStudentId = id || null;
+  document.getElementById('studentModalTitle').textContent = id ? t('modal.student.title_edit') : t('modal.student.title_new');
+  const stu = id ? Store.students.find(s => s.id === id) : null;
+  document.getElementById('studentNameInput').value = stu ? stu.name : '';
+  const picker = document.getElementById('studentColorPicker');
+  const currentColor = stu ? stu.color : PALETTE[0];
+  picker.innerHTML = PALETTE.map(c =>
+    `<div class="color-swatch ${c === currentColor ? 'active' : ''}" data-color="${c}" style="background:${c}"></div>`
+  ).join('');
+  document.getElementById('studentModal').classList.add('open');
+  setTimeout(() => document.getElementById('studentNameInput').focus(), 50);
+}
+function saveStudentModal() {
+  const name = document.getElementById('studentNameInput').value.trim();
+  if (!name) { showToast(t('toast.need_name')); return; }
+  const activeSwatch = document.querySelector('#studentColorPicker .color-swatch.active');
+  const color = activeSwatch ? activeSwatch.dataset.color : PALETTE[0];
+  updateStore(s => {
+    if (editingStudentId) {
+      const stu = s.students.find(x => x.id === editingStudentId);
+      if (stu) { stu.name = name; stu.color = color; }
+    } else {
+      const newStu = { id: genId('stu'), name, color };
+      s.students.push(newStu);
+      if (!s.currentStudentId) s.currentStudentId = newStu.id;
+    }
+  });
+  closeStudentModal();
+  renderAll();
+  showToast(t('toast.saved'));
+}
+function closeStudentModal() {
+  document.getElementById('studentModal').classList.remove('open');
+  editingStudentId = null;
+}
+
+function openCourseModal(id) {
+  editingCourseId = id || null;
+  document.getElementById('courseModalTitle').textContent = id ? t('modal.course.title_edit') : t('modal.course.title_new');
+  const course = id ? Store.courses.find(c => c.id === id) : null;
+  editingCourseRestDates = course ? (course.restDates || []).slice() : [];
+  renderSubjectSelect();
+  document.getElementById('courseNameInput').value = course ? course.name : '';
+  document.getElementById('courseSubjectInput').value = course ? course.subject : (Store.subjects[0] ? Store.subjects[0].name : t('subject.type.custom'));
+  document.getElementById('courseClassInput').value = course ? course.className : '';
+  document.getElementById('courseStartDateInput').value = course ? course.startDate : '2026-07-12';
+  document.getElementById('courseEndDateInput').value = course ? course.endDate : '2026-07-28';
+  document.getElementById('courseStartTimeInput').value = course ? course.startTime : '08:30';
+  document.getElementById('courseEndTimeInput').value = course ? course.endTime : '';
+  document.getElementById('courseLocationInput').value = course ? course.location : '';
+  document.getElementById('courseTeacherInput').value = course ? course.teacher : '';
+  document.getElementById('courseRoomInput').value = course ? course.room : '';
+  updateCoursePreview();
+  document.getElementById('courseModal').classList.add('open');
+}
+function getCourseFormData() {
+  return {
+    name: document.getElementById('courseNameInput').value.trim(),
+    subject: document.getElementById('courseSubjectInput').value,
+    className: document.getElementById('courseClassInput').value.trim(),
+    startDate: document.getElementById('courseStartDateInput').value,
+    endDate: document.getElementById('courseEndDateInput').value,
+    startTime: document.getElementById('courseStartTimeInput').value,
+    endTime: document.getElementById('courseEndTimeInput').value,
+    location: document.getElementById('courseLocationInput').value.trim(),
+    teacher: document.getElementById('courseTeacherInput').value.trim(),
+    room: document.getElementById('courseRoomInput').value.trim(),
+    restDates: editingCourseRestDates.slice()
+  };
+}
+function validateCourse(data) {
+  if (!data.name) return t('error.name_required');
+  if (!data.startDate || !data.endDate) return t('error.date_range_required') || '请填写日期范围';
+  if (data.startDate > data.endDate) return t('error.start_after_end') || '开始日期不能晚于结束日期';
+  if (!data.startTime) return t('error.start_time_required') || '请填写开始时间';
+  const total = countRangeDays(data.startDate, data.endDate);
+  if (total === 0) return t('error.invalid_range') || '日期范围无效';
+  if (data.restDates.length >= total) return t('error.no_class_day') || '至少需要保留 1 个上课日';
+  return null;
+}
+function applyPreset(kind) {
+  const start = document.getElementById('courseStartDateInput').value;
+  const end = document.getElementById('courseEndDateInput').value;
+  if (!start || !end || start > end) { showToast(t('toast.invalid_range')); return; }
+  const all = listRangeDates(start, end);
+  const rest = new Set();
+  if (kind === 'all') { /* no-op */ }
+  else if (kind === 'none') { all.forEach(d => rest.add(d)); }
+  else if (kind === 'weekdays') { all.forEach(d => { const dow = parseISO(d).getDay(); if (dow === 0 || dow === 6) rest.add(d); }); }
+  else if (kind === '5on1off') { all.forEach((d, i) => { if (i % 6 === 5) rest.add(d); }); }
+  else if (kind === '6on1off') { all.forEach((d, i) => { if (i % 7 === 6) rest.add(d); }); }
+  editingCourseRestDates = [...rest];
+  updateCoursePreview();
+}
+function updateCoursePreview() {
+  const data = getCourseFormData();
+  const err = validateCourse(data);
+  const preview = document.getElementById('coursePreview');
+  const summary = document.getElementById('coursePreviewSummary');
+  if (err) {
+    preview.innerHTML = `<div class="preview-warning">⚠ ${err}</div>`;
+    summary.textContent = '';
+    return;
+  }
+  const all = listRangeDates(data.startDate, data.endDate);
+  const rest = new Set(editingCourseRestDates);
+  const classCount = all.filter(d => !rest.has(d)).length;
+  preview.innerHTML = all.map(iso => {
+    const isClass = !rest.has(iso);
+    return `<div class="preview-chip ${isClass ? 'is-class' : 'is-rest'}" data-date="${iso}" data-action="toggle-preview-date">${fmtDateCN(iso)}</div>`;
+  }).join('');
+  summary.innerHTML = `📊 ${t('legend.statuses')} <b>${all.length}</b> · <b style="color:var(--accent);">${classCount}</b> · ${rest.size}`;
+}
+function saveCourseModal() {
+  const data = getCourseFormData();
+  const err = validateCourse(data);
+  if (err) { showToast(err); return; }
+  updateStore(s => {
+    if (editingCourseId) {
+      const c = s.courses.find(x => x.id === editingCourseId);
+      if (c) Object.assign(c, data);
+    } else {
+      data.id = genId('c');
+      data.studentId = s.currentStudentId;
+      s.courses.push(data);
+    }
+  });
+  closeCourseModal();
+  renderAll();
+  showToast(t('toast.saved'));
+}
+function closeCourseModal() {
+  document.getElementById('courseModal').classList.remove('open');
+  editingCourseId = null;
+  editingCourseRestDates = [];
+}
+
+function openSubjectModal(name) {
+  editingSubjectOriginalName = name || null;
+  document.getElementById('subjectModalTitle').textContent = name ? t('modal.subject.title_edit') : t('modal.subject.title_new');
+  const subject = name ? (Store.subjects || []).find(s => s.name === name) : null;
+  const builtIn = name && isBuiltInSubject(name);
+  const nameInput = document.getElementById('subjectNameInput');
+  nameInput.value = subject ? subject.name : '';
+  nameInput.disabled = !!builtIn;
+  nameInput.placeholder = builtIn ? t('modal.subject.placeholder.builtin') : t('modal.subject.placeholder.name');
+  const picker = document.getElementById('subjectColorPicker');
+  const currentColor = subject ? subject.color : CUSTOM_SUBJECT_PALETTE[0];
+  const allColors = Array.from(new Set([currentColor, ...CUSTOM_SUBJECT_PALETTE]));
+  picker.innerHTML = allColors.map(c =>
+    `<div class="color-swatch ${c === currentColor ? 'active' : ''}" data-color="${c}" style="background:${c}"></div>`
+  ).join('');
+  document.getElementById('subjectModal').classList.add('open');
+  setTimeout(() => { if (!nameInput.disabled) nameInput.focus(); }, 50);
+}
+function saveSubjectModal() {
+  const nameInput = document.getElementById('subjectNameInput');
+  const newName = nameInput.value.trim();
+  const activeSwatch = document.querySelector('#subjectColorPicker .color-swatch.active');
+  const newColor = activeSwatch ? activeSwatch.dataset.color : CUSTOM_SUBJECT_PALETTE[0];
+  if (!newName) { showToast(t('error.subject_name_required')); return; }
+  let dup = false;
+  updateStore(s => {
+    if (!s.subjects) s.subjects = [];
+    if (editingSubjectOriginalName) {
+      const subj = s.subjects.find(x => x.name === editingSubjectOriginalName);
+      if (!subj) return;
+      if (newName !== editingSubjectOriginalName) {
+        if (s.subjects.some(x => x.name === newName && x !== subj)) { dup = true; return; }
+        s.courses.forEach(c => { if (c.subject === editingSubjectOriginalName) c.subject = newName; });
+        subj.name = newName;
+      }
+      subj.color = newColor;
+    } else {
+      if (s.subjects.some(x => x.name === newName)) { dup = true; return; }
+      s.subjects.push({ name: newName, color: newColor, builtIn: false });
+    }
+  });
+  if (dup) { showToast(t('error.duplicate_subject')); return; }
+  closeSubjectModal();
+  renderAll();
+  showToast(t('toast.saved'));
+}
+function closeSubjectModal() {
+  document.getElementById('subjectModal').classList.remove('open');
+  editingSubjectOriginalName = null;
+}
+
+// === Day drawer ===
+function openDayDrawer(iso) {
+  document.getElementById('dayDrawerTitle').textContent = fmtDateFull(iso);
+  const body = document.getElementById('dayDrawerBody');
+  const studentCourses = Store.courses.filter(c => generateClassDates(c).includes(iso));
+  if (studentCourses.length === 0) {
+    body.innerHTML = `<div class="empty-state">${t('day_drawer.empty')}</div>`;
+  } else {
+    studentCourses.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    body.innerHTML = studentCourses.map(c => {
+      const stu = Store.students.find(s => s.id === c.studentId);
+      return `
+        <div class="drawer-item">
+          <div class="drawer-item-head">
+            <span class="drawer-item-subject" style="background:${getSubjectColor(c.subject)}">${c.subject}</span>
+            <span class="drawer-item-name">${escapeHtml(c.name)}</span>
+          </div>
+          <div class="drawer-item-time">⏰ ${fmtTimeRange(c.startTime, c.endTime)}</div>
+          <div class="drawer-item-meta">
+            <div>👤 ${escapeHtml(stu ? stu.name : '-')}</div>
+            <div>📚 ${escapeHtml(c.className || '-')}</div>
+            <div>📍 ${escapeHtml(c.location || '-')}</div>
+            <div>🧑‍🏫 ${escapeHtml(c.teacher || '-')}</div>
+            <div>🚪 ${escapeHtml(c.room || '-')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('dayDrawer').classList.add('open');
+}
+function closeDayDrawer() { document.getElementById('dayDrawer').classList.remove('open'); }
+
+function openConfirm(message, cb, title) {
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmTitle').textContent = title || t('modal.confirm.title');
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); confirmCallback = null; }
+
+function openSettings() {
+  document.getElementById('settingsDrawer').classList.add('open');
+  document.getElementById('themeToggle').classList.toggle('on', Store.theme === 'dark');
+  updateBackendPill();
+}
+function closeSettings() { document.getElementById('settingsDrawer').classList.remove('open'); }
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// === Image export ===
+async function captureToCanvas(targetEl) {
+  const bgColor = getComputedStyle(document.body).getPropertyValue('--card').trim() || '#ffffff';
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:fixed;left:-10000px;top:0;background:${bgColor};padding:32px 36px;box-sizing:border-box;display:inline-block;`;
+  const clone = targetEl.cloneNode(true);
+  clone.style.cssText = '';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  try {
+    return await html2canvas(wrapper, { backgroundColor: bgColor, scale: 2, useCORS: true, logging: false });
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+}
+async function exportPNG() {
+  const stu = getCurrentStudent();
+  if (!stu) { showToast(t('empty.no_courses_need_student')); return; }
+  if (typeof html2canvas !== 'function') { showToast('html2canvas missing'); return; }
+  showToast(t('toast.saved') + '...');
+  document.body.classList.add('exporting');
+  try {
+    const target = document.getElementById('view-calendar');
+    const canvas = await captureToCanvas(target);
+    const link = document.createElement('a');
+    const suffix = Backend && Backend.name === 'http' ? '_synced' : '';
+    link.download = `${stu.name}_${Store.currentMonth}_${currentLang === 'en' ? 'schedule' : '课表'}${suffix}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    console.error(e);
+    showToast('Export failed: ' + e.message);
+  } finally {
+    document.body.classList.remove('exporting');
+  }
+}
+async function exportCoursesPNG() {
+  const stu = getCurrentStudent();
+  if (!stu) { showToast(t('empty.no_courses_need_student')); return; }
+  if (typeof html2canvas !== 'function') { showToast('html2canvas missing'); return; }
+  const courses = getCoursesByStudent(stu.id);
+  if (courses.length === 0) { showToast(t('empty.no_courses')); return; }
+  showToast(t('toast.saved') + '...');
+  document.body.classList.add('exporting');
+  try {
+    const target = document.getElementById('coursesList');
+    const canvas = await captureToCanvas(target);
+    const link = document.createElement('a');
+    link.download = `${stu.name}_${currentLang === 'en' ? 'courses' : '课程列表'}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    console.error(e);
+    showToast('Export failed: ' + e.message);
+  } finally {
+    document.body.classList.remove('exporting');
+  }
+}
+
+// === JSON import/export ===
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(Store, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `juan-schedule-backup-${todayISO()}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast(t('toast.saved'));
+}
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.students || !data.courses) throw new Error('bad file');
+      openConfirm(t('msg.confirm.reset'), () => {
+        Store = data;
+        if (!Store.currentStudentId && Store.students[0]) Store.currentStudentId = Store.students[0].id;
+        saveStore();
+        renderAll();
+        showToast(t('toast.saved'));
+      }, t('settings.import_data.label'));
+    } catch (err) {
+      showToast('Import failed: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// === Backend controls ===
+async function handleDetectBackend() {
+  showToast(t('settings.backend.detect') + '...');
+  const result = await detectBackend();
+  if (result === 'http') {
+    // Pull latest from server
+    try {
+      Store = await HttpBackend.read();
+      saveStoreLocalMirror();
+      renderAll();
+    } catch (_) {
+      Backend = LocalBackend;
+    }
+  } else {
+    Backend = LocalBackend;
+  }
+  updateBackendPill();
+  showToast(result === 'http' ? t('settings.backend.detected') : t('settings.backend.offline'));
+}
+
+async function handleUploadToBackend() {
+  showToast(t('settings.backend.upload') + '...');
+  const result = await detectBackend();
+  if (result === 'http') {
+    try {
+      await HttpBackend.import(Store);
+      showToast(t('settings.backend.uploaded'));
+    } catch (e) {
+      showToast('Upload failed: ' + e.message);
+    }
+  } else {
+    showToast(t('settings.backend.offline'));
+  }
+  updateBackendPill();
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  if (Store) Store.lang = lang;
+  applyI18n();
+  saveStore();
+  renderAll();
+}
+
+function renderAll() {
+  renderTopBar();
+  renderTabs();
+  if (Store.currentView === 'calendar') renderCalendar();
+  else if (Store.currentView === 'students') renderStudents();
+  else if (Store.currentView === 'courses') renderCourses();
+  else if (Store.currentView === 'subjects') renderSubjectManager();
+  renderSubjectSelect();
+  updateBackendPill();
+}
+
+function changeMonth(delta) {
+  const [y, m] = Store.currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  Store.currentMonth = toISO(d).slice(0, 7);
+  saveStore();
+  renderCalendar();
+}
+function goToday() {
+  Store.currentMonth = todayISO().slice(0, 7);
+  saveStore();
+  renderCalendar();
+}
+
+// === Event delegation ===
+function bindEvents() {
+  document.body.addEventListener('click', e => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+    const id = target.dataset.id;
+    const date = target.dataset.date;
+
+    switch (action) {
+      case 'toggle-student-menu':
+        document.getElementById('studentMenu').classList.toggle('open');
+        e.stopPropagation();
+        break;
+      case 'select-student':
+        Store.currentStudentId = id;
+        saveStore();
+        document.getElementById('studentMenu').classList.remove('open');
+        renderAll();
+        break;
+      case 'switch-to-students':
+        Store.currentView = 'students';
+        saveStore();
+        document.getElementById('studentMenu').classList.remove('open');
+        renderAll();
+        break;
+      case 'select-student-and-courses':
+        Store.currentStudentId = id;
+        Store.currentView = 'courses';
+        saveStore();
+        renderAll();
+        break;
+      case 'prev-month': changeMonth(-1); break;
+      case 'next-month': changeMonth(1); break;
+      case 'today': goToday(); break;
+      case 'open-day': openDayDrawer(date); break;
+      case 'close-day-drawer': closeDayDrawer(); break;
+      case 'export-png': exportPNG(); break;
+      case 'export-courses-png': exportCoursesPNG(); break;
+      case 'open-settings': openSettings(); break;
+      case 'close-settings': closeSettings(); break;
+      case 'toggle-theme':
+        Store.theme = Store.theme === 'dark' ? 'light' : 'dark';
+        saveStore();
+        document.documentElement.dataset.theme = Store.theme;
+        document.getElementById('themeToggle').classList.toggle('on', Store.theme === 'dark');
+        break;
+      case 'set-lang-zh': setLang('zh'); break;
+      case 'set-lang-en': setLang('en'); break;
+      case 'detect-backend': handleDetectBackend(); break;
+      case 'upload-to-backend': handleUploadToBackend(); break;
+      case 'export-json': exportJSON(); break;
+      case 'import-json':
+        document.getElementById('importFileInput').click();
+        break;
+      case 'reset-data':
+        openConfirm(t('msg.confirm.reset'), () => {
+          Store = seedSampleData();
+          currentLang = Store.lang || 'zh';
+          saveStore();
+          applyI18n();
+          renderAll();
+          showToast(t('toast.saved'));
+        }, t('settings.reset.label'));
+        break;
+      case 'new-student': openStudentModal(); break;
+      case 'edit-student': openStudentModal(id); break;
+      case 'delete-student': {
+        const stu = Store.students.find(s => s.id === id);
+        if (!stu) { showToast(t('error.id_not_found', { id })); break; }
+        const courseCount = getCoursesByStudent(id).length;
+        const msg = t('msg.confirm.delete_student', { name: stu.name });
+        openConfirm(msg, () => {
+          updateStore(s => {
+            s.students = s.students.filter(x => x.id !== id);
+            s.courses = s.courses.filter(c => c.studentId !== id);
+            if (s.currentStudentId === id) s.currentStudentId = s.students[0] ? s.students[0].id : null;
+          });
+          renderAll();
+          showToast(t('toast.saved'));
+        }, t('settings.reset.label'));
+        break;
+      }
+      case 'new-course':
+        if (!getCurrentStudent()) { showToast(t('empty.no_courses_need_student')); break; }
+        openCourseModal();
+        break;
+      case 'edit-course': openCourseModal(id); break;
+      case 'delete-course': {
+        const c = Store.courses.find(x => x.id === id);
+        if (!c) { showToast(t('error.id_not_found', { id })); break; }
+        openConfirm(t('msg.confirm.delete_course', { name: c.name }), () => {
+          updateStore(s => { s.courses = s.courses.filter(x => x.id !== id); });
+          renderAll();
+          showToast(t('toast.saved'));
+        }, t('settings.reset.label'));
+        break;
+      }
+      case 'close-student-modal': closeStudentModal(); break;
+      case 'close-course-modal': closeCourseModal(); break;
+      case 'cancel-confirm': closeConfirm(); break;
+      case 'preset-all': applyPreset('all'); break;
+      case 'preset-none': applyPreset('none'); break;
+      case 'preset-weekdays': applyPreset('weekdays'); break;
+      case 'preset-5on1off': applyPreset('5on1off'); break;
+      case 'preset-6on1off': applyPreset('6on1off'); break;
+      case 'toggle-preview-date': {
+        const iso = target.dataset.date;
+        const idx = editingCourseRestDates.indexOf(iso);
+        if (idx >= 0) editingCourseRestDates.splice(idx, 1);
+        else editingCourseRestDates.push(iso);
+        updateCoursePreview();
+        break;
+      }
+      case 'new-subject': openSubjectModal(); break;
+      case 'edit-subject': openSubjectModal(id || target.dataset.name); break;
+      case 'delete-subject': {
+        const subjName = target.dataset.name;
+        if (isBuiltInSubject(subjName)) { showToast(t('error.builtin_locked')); break; }
+        const used = Store.courses.filter(c => c.subject === subjName);
+        if (used.length > 0) { showToast(t('error.subject_in_use', { n: used.length })); break; }
+        openConfirm(t('msg.confirm.delete_subject', { name: subjName }), () => {
+          updateStore(s => { s.subjects = (s.subjects || []).filter(x => x.name !== subjName); });
+          renderAll();
+          showToast(t('toast.saved'));
+        }, t('settings.reset.label'));
+        break;
+      }
+      case 'close-subject-modal': closeSubjectModal(); break;
+    }
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      Store.currentView = tab.dataset.view;
+      saveStore();
+      renderAll();
+    });
+  });
+
+  document.getElementById('statusFilterLegend').addEventListener('click', e => {
+    const item = e.target.closest('.status-legend-item');
+    if (!item) return;
+    Store.statusFilter = item.dataset.status;
+    saveStore();
+    document.querySelectorAll('#statusFilterLegend .status-legend-item').forEach(p =>
+      p.classList.toggle('active', p === item)
+    );
+    renderCalendar();
+  });
+
+  document.getElementById('studentColorPicker').addEventListener('click', e => {
+    const sw = e.target.closest('.color-swatch');
+    if (!sw) return;
+    document.querySelectorAll('#studentColorPicker .color-swatch').forEach(s =>
+      s.classList.toggle('active', s === sw)
+    );
+  });
+  document.getElementById('subjectColorPicker').addEventListener('click', e => {
+    const sw = e.target.closest('.color-swatch');
+    if (!sw) return;
+    document.querySelectorAll('#subjectColorPicker .color-swatch').forEach(s =>
+      s.classList.toggle('active', s === sw)
+    );
+  });
+
+  document.getElementById('studentModalSave').addEventListener('click', saveStudentModal);
+  document.getElementById('courseModalSave').addEventListener('click', saveCourseModal);
+  document.getElementById('subjectModalSave').addEventListener('click', saveSubjectModal);
+  document.getElementById('confirmOk').addEventListener('click', () => {
+    if (confirmCallback) confirmCallback();
+    closeConfirm();
+  });
+
+  ['courseNameInput','courseSubjectInput','courseClassInput',
+   'courseStartDateInput','courseEndDateInput','courseStartTimeInput','courseEndTimeInput',
+   'courseLocationInput','courseTeacherInput','courseRoomInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateCoursePreview);
+  });
+
+  document.getElementById('importFileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) importJSON(file);
+    e.target.value = '';
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#studentSelector')) {
+      document.getElementById('studentMenu').classList.remove('open');
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeDayDrawer();
+      closeSettings();
+      closeStudentModal();
+      closeCourseModal();
+      closeSubjectModal();
+      closeConfirm();
+    }
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) {
+        if (overlay.id === 'studentModal') closeStudentModal();
+        else if (overlay.id === 'courseModal') closeCourseModal();
+        else if (overlay.id === 'subjectModal') closeSubjectModal();
+        else if (overlay.id === 'confirmModal') closeConfirm();
+      }
+    });
+  });
+}
+
+// === Init ===
+async function init() {
+  // Read URL params first. ?export=1 enables Puppeteer-friendly clean
+  // rendering (see CSS for body.export-mode). ?student / ?month can
+  // deep-link to a specific student+month.
+  const urlParams = new URLSearchParams(location.search);
+  const exportMode = urlParams.get('export') === '1';
+  const urlStudent = urlParams.get('student');
+  const urlMonth = urlParams.get('month');
+  if (exportMode) {
+    document.body.classList.add('export-mode');
+    // Force calendar view + light theme for clean PNG output.
+    document.documentElement.dataset.theme = 'light';
+  }
+
+  // Detect language: navigator preference first, then stored, then default zh.
+  let initialLang = 'zh';
+  try {
+    if (navigator.language && navigator.language.toLowerCase().startsWith('en')) {
+      initialLang = 'en';
+    }
+  } catch (_) {}
+  currentLang = initialLang;
+  applyI18n();
+
+  // Always start with localStorage; HTTP backend will be detected asynchronously
+  // (and switched in if available). This guarantees the Web UI is responsive
+  // when opened by double-click on a fresh browser.
+  // Export mode: skip localStorage entirely. The Puppeteer exporter
+  // mounts the page on an embedded HTTP server, so go straight to the
+  // HttpBackend — localStorage in a fresh Chromium is empty and would
+  // produce blank screenshots.
+  if (exportMode) {
+    Backend = HttpBackend;
+    try {
+      Store = await HttpBackend.read();
+    } catch (e) {
+      console.error('export mode: failed to load from HTTP backend', e);
+    }
+  } else {
+    Backend = LocalBackend;
+    loadStore();
+  }
+
+  // Apply URL overrides for student/month — works in both regular and
+  // export mode. Used by the Puppeteer exporter for deep-linking.
+  if (urlStudent) Store.currentStudentId = urlStudent;
+  if (urlMonth && /^\d{4}-\d{2}$/.test(urlMonth)) Store.currentMonth = urlMonth;
+
+  // Apply stored language (overrides navigator) once Store is loaded
+  if (Store && Store.lang && I18N[Store.lang]) {
+    currentLang = Store.lang;
+    applyI18n();
+  }
+  if (!Store.statusFilter) Store.statusFilter = 'all';
+  if (!exportMode) {
+    document.documentElement.dataset.theme = Store.theme || 'light';
+  }
+  bindEvents();
+  renderAll();
+
+  // Signal Puppeteer that the page has finished its first render.
+  window.__juanExportReady = true;
+
+  if (exportMode) {
+    // Skip async backend detection in export mode — the embedded server
+    // already supplies the data, and we don't want any UI churn.
+    return;
+  }
+
+  // Async backend detection — does not block UI.
+  const detected = await detectBackend();
+  if (detected === 'http') {
+    try {
+      Store = await HttpBackend.read();
+      saveStoreLocalMirror();
+      renderAll();
+    } catch (_) {
+      Backend = LocalBackend;
+    }
+  }
+  updateBackendPill();
+}
+
+init();
+})();
+</script>
+</body>
+</html>

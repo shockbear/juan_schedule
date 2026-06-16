@@ -1,0 +1,56 @@
+{
+  "name": "juan-schedule",
+  "version": "0.1.0",
+  "description": "卷王多人培训课程管理 - Manage training courses for multiple students, with calendar, export, and AI agent integration.",
+  "main": "src/cli.js",
+  "bin": {
+    "juan-schedule": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js web",
+    "init": "node src/cli.js init",
+    "test": "node test/smoke.js"
+  },
+  "files": [
+    "src",
+    "test",
+    "index.html",
+    "SKILL.md",
+    "manifest.json",
+    "README.md",
+    "MIGRATION.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "schedule",
+    "calendar",
+    "course",
+    "training",
+    "student",
+    "agent",
+    "skill",
+    "openclaw"
+  ],
+  "author": "juan-schedule contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/shockbear/juan_schedule#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shockbear/juan_schedule.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shockbear/juan_schedule/issues"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^23.11.1"
+  }
+}
+
+

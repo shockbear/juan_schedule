@@ -1,0 +1,26 @@
+{
+  "name": "juan-schedule",
+  "version": "0.1.0",
+  "description": "卷王多人培训课程管理 - Multi-student training course manager with calendar, PNG export, and AI agent tool integration.",
+  "author": "juan-schedule contributors",
+  "license": "MIT",
+  "entry": "src/cli.js",
+  "skill": "SKILL.md",
+  "tags": [
+    "schedule",
+    "calendar",
+    "course",
+    "student",
+    "agent",
+    "openclaw",
+    "mcp-style-tool"
+  ],
+  "data": {
+    "file": "~/.juan-schedule/data.json",
+    "env_override": "JUAN_SCHEDULE_HOME"
+  },
+  "endpoints": {
+    "cli": "node src/cli.js",
+    "web_default_port": 3737
+  }
+}

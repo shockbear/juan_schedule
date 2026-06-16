@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install (without Puppeteer to keep CI fast)
+        run: npm install --omit=optional
+      - name: Install Puppeteer for export-png coverage
+        run: npm install puppeteer
+      - name: Run smoke test
+        run: npm test
