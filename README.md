@@ -13,10 +13,6 @@
 - **国际化** —— 界面中文 / English 切换；工具描述固定英文
 - **无需构建** —— 纯 Node，不依赖打包器；装上即用
 - **原子写入** —— 即使进程被强杀，也不会留下半损坏的 JSON
-<img width="1920" height="989" alt="image" src="https://github.com/user-attachments/assets/92f65a97-b801-48f3-9377-0ec03b9b18f1" />
-<img width="1418" height="1380" alt="秦若宁_2026-07_课表 (1)" src="https://github.com/user-attachments/assets/f20b26a3-2124-4259-be0f-4319a5151e2a" />
-<img width="1772" height="704" alt="秦若宁_课程列表 (1)" src="https://github.com/user-attachments/assets/34030f0f-8e87-44a1-a0f7-76ac32d2ec7f" />
-
 
 ## 界面预览
 
